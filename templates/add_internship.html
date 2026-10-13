@@ -1,25 +1,37 @@
 {% extends "base.html" %}
+{% block title %}Register Internship - Practicum Portal{% endblock %}
+
 {% block content %}
-<div class="container mt-5" style="max-width: 500px;">
-    <h2>Add Internship Details</h2>
-    <form method="POST">
-        <div class="mb-3">
-            <label class="form-label">Company Name</label>
-            <input type="text" name="company_name" class="form-control" required>
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 border-0">
+            <h3 class="mb-4 text-center">Register Practicum Details</h3>
+            
+            <form method="POST" enctype="multipart/form-data" action="{{ url_for('add_internship') }}">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Company Name</label>
+                    <input type="text" name="company_name" class="form-control" placeholder="e.g. Tech Solutions Inc." required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Upload Company MOA / Agreement (PDF/Image)</label>
+                    <input type="file" name="moa_file" class="form-control" accept=".pdf,.png,.jpg,.jpeg" required>
+                    <div class="form-text small text-muted">Upload the signed Memorandum of Agreement or company endorsement document.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Select Adviser</label>
+                    <select name="adviser_id" class="form-select" required>
+                        <option value="" disabled selected>Choose your adviser</option>
+                        {% for adviser in advisers %}
+                            <option value="{{ adviser.id }}">{{ adviser.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 mt-3">Submit for Approval</button>
+            </form>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Required Hours</label>
-            <input type="number" step="any" name="required_hours" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Adviser</label>
-            <select name="adviser_id" class="form-control" required>
-                {% for adviser in advisers %}
-                <option value="{{ adviser.id }}">{{ adviser.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Save Internship</button>
-    </form>
+    </div>
 </div>
 {% endblock %}

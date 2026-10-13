@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Internship Requests - Practicum Portal{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-warning mb-0">Pending Internship Requests</h3>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+    </div>
+
+    <div class="card shadow-sm p-4 mb-4">
+        <table class="table table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Student Number</th>
+                    <th>Full Name</th>
+                    <th>Course</th>
+                    <th>Company Name</th>
+                    <th>MOA / Company Doc</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student, internship in pending_requests %}
+                <tr>
+                    <td><strong>{{ student.student_number or 'N/A' }}</strong></td>
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.course }}</td>
+                    <td>{{ internship.company_name }}</td>
+                    <td>
+                        {% if internship.moa_path %}
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#previewModal{{ internship.id }}">
+                                View MOA PDF
+                            </button>
+
+                            <div class="modal fade" id="previewModal{{ internship.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">MOA Document - {{ student.name }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                       <div class="modal-body text-center" style="height: 70vh; overflow-y: auto;">
+    {% if internship.moa_path.lower().endswith(('.png', '.jpg', '.jpeg')) %}
+        <img src="/{{ internship.moa_path }}" class="img-fluid h-100 object-fit-contain" alt="MOA Document">
+    {% else %}
+        <embed src="/{{ internship.moa_path }}" type="application/pdf" width="100%" height="100%">
+    {% endif %}
+</div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-dark btn-sm" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <span class="text-muted small">No file uploaded</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" class="d-inline">
+                            <input type="hidden" name="internship_id" value="{{ internship.id }}">
+                            <button type="submit" name="status" value="Approved" class="btn btn-success btn-sm">Approve</button>
+                            <button type="submit" name="status" value="Rejected" class="btn btn-danger btn-sm">Reject</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">No pending internship requests found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

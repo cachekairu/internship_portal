@@ -1,48 +1,128 @@
 {% extends "base.html" %}
+{% block title %}Recent Logs - Practicum Portal{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <h2>Review Student Weekly Logs</h2>
-    <table class="table table-striped mt-3">
-        <thead>
-            <tr>
-                <th>Student Name</th>
-                <th>Company</th>
-                <th>Week</th>
-                <th>Hours</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for log, student, internship in logs %}
-            <tr>
-                <td><strong>{{ student.name }}</strong><br><small class="text-muted">{{ student.email }}</small></td>
-                <td>{{ internship.company_name }}</td>
-                <td>Week {{ log.week_number }}</td>
-                <td>{{ log.hours_rendered }} hrs</td>
-                <td>
-                    {% if log.status == 'Approved' %}
-                        <span class="badge bg-success">Approved</span>
-                    {% elif log.status == 'Rejected' %}
-                        <span class="badge bg-danger">Rejected</span>
-                    {% else %}
-                        <span class="badge bg-warning text-dark">Pending</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <form method="POST" class="d-inline">
-                        <input type="hidden" name="log_id" value="{{ log.id }}">
-                        <button type="submit" name="status" value="Approved" class="btn btn-success btn-sm">Approve</button>
-                        <button type="submit" name="status" value="Rejected" class="btn btn-danger btn-sm">Reject</button>
-                    </form>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6" class="text-center text-muted">Wala pang isinumiteng logs ang iyong mga estudyante.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold mb-0">Recent Student Weekly Logs</h3>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+    </div>
+
+    <div class="card shadow-sm p-4 mb-4">
+        <form method="GET" action="{{ url_for('review_logs') }}" class="row g-3 mb-4" autocomplete="off">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" placeholder="Search student name..." value="{{ request.args.get('search', '') }}" autocomplete="off">
+            </div>
+            <div class="col-md-3">
+                <select name="company" class="form-select">
+                    <option value="">All Companies</option>
+                    {% for company in companies %}
+                        <option value="{{ company.company_name }}" {% if request.args.get('company') == company.company_name %}selected{% endif %}>{{ company.company_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="Pending" {% if request.args.get('status') == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="Approved" {% if request.args.get('status') == 'Approved' %}selected{% endif %}>Approved</option>
+                    <option value="Rejected" {% if request.args.get('status') == 'Rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="sort" class="form-select">
+                    <option value="latest" {% if request.args.get('sort') == 'latest' %}selected{% endif %}>Latest First</option>
+                    <option value="oldest" {% if request.args.get('sort') == 'oldest' %}selected{% endif %}>Oldest First</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                <a href="{{ url_for('review_logs') }}" class="btn btn-outline-secondary" title="Reset Filters">✕</a>
+            </div>
+        </form>
+
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Student Name</th>
+                    <th>Company</th>
+                    <th>Week #</th>
+                    <th>Hours</th>
+                    <th>Time Card</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log, student, internship in logs %}
+                {% set max_w = namespace(val=0) %}
+                {% set all_logs = namespace(items=[]) %}
+                {# Para makuha ang max week ng partikular na internship na ito #}
+                {% set internship_logs = namespace(max=0) %}
+                {# Simplified check o direktang i-allow kung Pending o kaya ay nasa 3 recent weeks #}
+                <tr>
+                    <td><strong>{{ student.name }}</strong></td>
+                    <td>{{ internship.company_name }}</td>
+                    <td>Week {{ log.week_number }}</td>
+                    <td>{{ log.hours_rendered }} hrs</td>
+                    <td>
+                        {% if log.time_card_path %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalTimeCard{{ log.id }}">
+                                View Time Card
+                            </button>
+
+                            <div class="modal fade" id="modalTimeCard{{ log.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Time Card - {{ student.name }} (Week {{ log.week_number }})</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body text-center" style="height: 70vh; overflow-y: auto;">
+                                            {% if log.time_card_path.lower().endswith(('.png', '.jpg', '.jpeg')) %}
+                                                <img src="/{{ log.time_card_path }}" class="img-fluid h-100 object-fit-contain" alt="Time Card">
+                                            {% else %}
+                                                <embed src="/{{ log.time_card_path }}" type="application/pdf" width="100%" height="100%">
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-dark btn-sm" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <span class="text-muted small">No file</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.status == 'Approved' %}
+                            <span class="badge bg-success">Approved</span>
+                        {% elif log.status == 'Rejected' %}
+                            <span class="badge bg-danger">Rejected</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.status == 'Pending' %}
+                            <form method="POST" action="{{ url_for('review_logs') }}" class="d-inline">
+                                <input type="hidden" name="log_id" value="{{ log.id }}">
+                                <button type="submit" name="status" value="Approved" class="btn btn-sm btn-success">Approve</button>
+                                <button type="submit" name="status" value="Rejected" class="btn btn-sm btn-danger">Reject</button>
+                            </form>
+                        {% else %}
+                            <span class="text-muted small fw-bold">Locked</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted">No weekly logs found matching the filter criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

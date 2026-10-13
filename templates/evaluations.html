@@ -1,81 +1,219 @@
 {% extends "base.html" %}
-{% block title %}Evaluations - Internship Portal{% endblock %}
+{% block title %}Evaluations & Performance - Practicum Portal{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Evaluation Form</h2>
-    
-    {% if user_role == 'adviser' %}
-        <!-- Upload Form para sa Adviser / Teacher lang -->
-        <div class="card shadow-sm p-4 mb-4" style="max-width: 600px;">
-            <h5 class="mb-3">Mag-upload ng Evaluation Form para sa Estudyante</h5>
-            <form method="POST" enctype="multipart/form-data">
-                <div class="mb-3">
-                    <label class="form-label">Pumili ng Estudyante / Internship</label>
-                    <select name="internship_id" class="form-select" required>
-                        <option value="" selected disabled>-- Pumili ng Estudyante --</option>
-                        {% for internship in internships %}
-                        <option value="{{ internship.id }}">ID #{{ internship.id }} - {{ internship.company_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Evaluation Document (PDF o Word)</label>
-                    <input type="file" name="evaluation_file" class="form-control" accept=".pdf,.doc,.docx" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Upload Evaluation</button>
-            </form>
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Performance & Evaluations</h2>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+    </div>
 
-        <h3>Listahan ng mga Na-upload na Evaluation</h3>
-        <table class="table table-striped mt-3">
+    {% if user_role == 'adviser' %}
+    <div class="card shadow-sm p-4 mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4 class="text-primary mb-3">Student Information</h4>
+                <p class="mb-1"><strong>Student Number:</strong> {{ student.student_number or 'N/A' }}</p>
+                <p class="mb-1"><strong>Full Name:</strong> {{ student.name }}</p>
+                <p class="mb-1"><strong>Email:</strong> {{ student.email }}</p>
+                <p class="mb-1"><strong>Company:</strong> {{ internship.company_name }}</p>
+                <p class="mb-0"><strong>Rendered Hours:</strong> {{ total_hours }} / {{ internship.required_hours }} hrs</p>
+            </div>
+            <div class="col-md-4 text-center mt-3 mt-md-0">
+                <div class="p-3 border rounded-pill bg-white shadow-sm d-inline-block px-4 py-3" style="min-width: 150px; border: 3px solid #198754 !important;">
+                    <span class="d-block text-muted small fw-bold text-uppercase">Progress</span>
+                    <span class="fs-3 fw-bold text-success">{{ progress_percentage }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if user_role == 'adviser' %}
+    <div class="card shadow-sm p-4 mb-4">
+        <h4 class="mb-3">Upload Weekly Evaluation (Week {{ next_eval_week }})</h4>
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('evaluations', internship_id=internship.id) }}" class="row g-3" autocomplete="off">
+            <div class="col-md-5">
+                <label class="form-label">Evaluation Document (PDF/Image)</label>
+                <input type="file" name="evaluation_file" class="form-control" accept=".pdf,.png,.jpg,.jpeg" required>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Remarks / Comments</label>
+                <input type="text" name="remarks" class="form-control" placeholder="e.g. Excellent performance this week" autocomplete="off">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Upload</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm p-4 mb-4">
+        <h4>Submitted Weekly Evaluations</h4>
+        <table class="table table-striped align-middle mt-3">
             <thead>
                 <tr>
-                    <th>Internship ID</th>
-                    <th>Status</th>
-                    <th>File / Document</th>
+                    <th>Week</th>
+                    <th>Remarks / Comments</th>
+                    <th>Evaluation File</th>
+                    {% if user_role == 'adviser' %}
+                    <th>Actions</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
-                {% for eval in evals %}
+                {% for eval in eval_records %}
                 <tr>
-                    <td>Internship ID #{{ eval.internship_id }}</td>
-                    <td><span class="badge bg-success">Uploaded</span></td>
+                    <td>Week {{ eval.week_number }}</td>
+                    <td>{{ eval.remarks or 'No remarks provided' }}</td>
                     <td>
-                        <a href="/{{ eval.file_path }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                            Tingnan / I-download ang File
-                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#evalModal{{ eval.id }}">
+                            View Evaluation
+                        </button>
+
+                        <div class="modal fade" id="evalModal{{ eval.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Evaluation - Week {{ eval.week_number }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body text-center" style="height: 70vh; overflow-y: auto;">
+                                        {% if eval.file_path.lower().endswith(('.png', '.jpg', '.jpeg')) %}
+                                            <img src="/{{ eval.file_path }}" class="img-fluid h-100 object-fit-contain" alt="Evaluation File">
+                                        {% else %}
+                                            <embed src="/{{ eval.file_path }}" type="application/pdf" width="100%" height="100%">
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-dark btn-sm" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </td>
+                    {% if user_role == 'adviser' %}
+                    <td>
+                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editEvalModal{{ eval.id }}">
+                            Edit
+                        </button>
+
+                        <div class="modal fade" id="editEvalModal{{ eval.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <form method="POST" enctype="multipart/form-data" action="{{ url_for('evaluations', internship_id=internship.id) }}" autocomplete="off">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Edit Evaluation - Week {{ eval.week_number }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body text-start">
+                                            <input type="hidden" name="eval_id" value="{{ eval.id }}">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Remarks / Comments</label>
+                                                <input type="text" name="remarks" class="form-control" value="{{ eval.remarks or '' }}" autocomplete="off">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Replace File (Optional)</label>
+                                                <input type="file" name="evaluation_file" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    {% endif %}
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="3" class="text-center text-muted">Wala pang naka-upload na evaluation.</td>
+                    <td colspan="{% if user_role == 'adviser' %}4{% else %}3{% endif %}" class="text-center text-muted">No weekly evaluations uploaded yet.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
 
-    {% else %}
-        <!-- View Status para sa Student -->
-        <div class="card shadow-sm p-4 mt-4" style="max-width: 600px;">
-            <h5 class="mb-3">Status ng Iyong Evaluation Form</h5>
-            {% if eval_record %}
-                <div class="alert alert-success d-flex align-items-center justify-content-between mb-0" role="alert">
-                    <div>
-                        <strong>Status:</strong> <span class="badge bg-success fs-6 ms-2">Uploaded</span>
-                        <p class="mb-0 mt-1 text-muted small">Na-upload na ng iyong adviser ang iyong evaluation form.</p>
-                    </div>
-                    <a href="/{{ eval_record.file_path }}" target="_blank" class="btn btn-primary btn-sm">
-                        Tingnan ang File
-                    </a>
-                </div>
-            {% else %}
-                <div class="alert alert-warning mb-0" role="alert">
-                    <strong>Status:</strong> <span class="badge bg-secondary fs-6 ms-2">Not Yet Uploaded</span>
-                    <p class="mb-0 mt-1 text-muted small">Wala pang na-upload na evaluation form ang iyong adviser.</p>
-                </div>
-            {% endif %}
-        </div>
+    {% if user_role == 'adviser' %}
+    <div class="card shadow-sm p-4">
+        <h4>Student Weekly Logs</h4>
+        <table class="table table-striped align-middle mt-3">
+            <thead>
+                <tr>
+                    <th>Week #</th>
+                    <th>Hours Rendered</th>
+                    <th>Time Card Proof</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>Week {{ log.week_number }}</td>
+                    <td>{{ log.hours_rendered }} hrs</td>
+                    <td>
+                        {% if log.time_card_path %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#logModal{{ log.id }}">
+                                View Time Card
+                            </button>
+
+                            <div class="modal fade" id="logModal{{ log.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Time Card Proof - Week {{ log.week_number }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body text-center" style="height: 70vh; overflow-y: auto;">
+                                            {% if log.time_card_path.lower().endswith(('.png', '.jpg', '.jpeg')) %}
+                                                <img src="/{{ log.time_card_path }}" class="img-fluid h-100 object-fit-contain" alt="Time Card">
+                                            {% else %}
+                                                <embed src="/{{ log.time_card_path }}" type="application/pdf" width="100%" height="100%">
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-dark btn-sm" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <span class="text-muted small">No file</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.status == 'Approved' %}
+                            <span class="badge bg-success">Approved</span>
+                        {% elif log.status == 'Rejected' %}
+                            <span class="badge bg-danger">Rejected</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.status == 'Pending' or log.week_number >= allowed_min_week %}
+                            <form method="POST" action="{{ url_for('evaluations', internship_id=internship.id) }}" class="d-inline">
+                                <input type="hidden" name="log_id" value="{{ log.id }}">
+                                <button type="submit" name="status" value="Approved" class="btn btn-sm btn-success">Approve</button>
+                                <button type="submit" name="status" value="Rejected" class="btn btn-sm btn-danger">Reject</button>
+                            </form>
+                        {% else %}
+                            <span class="text-muted small fw-bold">Locked</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No weekly logs submitted by student yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% endif %}
 </div>
 {% endblock %}
