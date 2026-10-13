@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Internship Portal{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm p-4 mb-4">
+        <h2>Maligayang pagdating, {{ user.name }}!</h2>
+        <p class="text-muted mb-0">Role: <span class="badge bg-secondary">{{ user.role | capitalize }}</span></p>
+    </div>
+
+    {% if user.role == 'student' %}
+        {% if internship %}
+            <!-- Internship Progress Card -->
+            <div class="card shadow-sm p-4 mb-4">
+                <h4 class="mb-3">Internship Progress</h4>
+                <p class="mb-1"><strong>Kumpanya:</strong> {{ internship.company_name }}</p>
+                <p class="mb-2"><strong>Rendered Hours:</strong> {{ total_hours }} / {{ internship.required_hours }} hrs</p>
+                
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                         role="progressbar" 
+                         style="width: {{ progress_percentage }}%;" 
+                         aria-valuenow="{{ progress_percentage }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        {{ progress_percentage }}%
+                    </div>
+                </div>
+
+                {% if eval_record %}
+                    <div class="alert alert-success mt-3 mb-0 d-flex justify-content-between align-items-center">
+                        <span><strong>Evaluation Form Status:</strong> <span class="badge bg-success">Uploaded</span></span>
+                        <a href="/{{ eval_record.file_path }}" target="_blank" class="btn btn-sm btn-outline-success">Tingnan ang Form</a>
+                    </div>
+                {% else %}
+                    <div class="alert alert-light border mt-3 mb-0">
+                        <strong>Evaluation Form Status:</strong> <span class="badge bg-secondary">Pending / Not Uploaded</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Add Weekly Log Card -->
+            <div class="card shadow-sm p-4 mb-4">
+                <h4 class="mb-3">Mag-add ng Weekly Log</h4>
+                <form method="POST" action="{{ url_for('dashboard') }}" class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label">Week Number</label>
+                        <input type="number" name="week_number" class="form-control" placeholder="e.g. 1" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Hours Rendered</label>
+                        <input type="number" step="any" name="hours_rendered" class="form-control" placeholder="e.g. 40" required>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Submit Log</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- List of Submitted Logs -->
+            <div class="card shadow-sm p-4">
+                <h4>Aking Weekly Logs</h4>
+                <table class="table table-striped mt-3">
+                    <thead>
+                        <tr>
+                            <th>Week #</th>
+                            <th>Hours</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>Week {{ log.week_number }}</td>
+                            <td>{{ log.hours_rendered }} hrs</td>
+                            <td>
+                                {% if log.status == 'Approved' %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif log.status == 'Rejected' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">Wala pang naisusumiteng log.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                Wala ka pang naidaragdag na internship details. 
+                <a href="{{ url_for('add_internship') }}" class="alert-link">I-click ito para mag-add.</a>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

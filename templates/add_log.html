@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    <h2>Submit Weekly Log</h2>
+    <form method="POST">
+        <div class="mb-3">
+            <label class="form-label">Week Number</label>
+            <input type="number" name="week_number" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Hours Rendered</label>
+            <input type="number" step="any" name="hours_rendered" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit Log</button>
+    </form>
+</div>
+{% endblock %}

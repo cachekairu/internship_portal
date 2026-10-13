@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Review Student Weekly Logs</h2>
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Company</th>
+                <th>Week</th>
+                <th>Hours</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log, student, internship in logs %}
+            <tr>
+                <td><strong>{{ student.name }}</strong><br><small class="text-muted">{{ student.email }}</small></td>
+                <td>{{ internship.company_name }}</td>
+                <td>Week {{ log.week_number }}</td>
+                <td>{{ log.hours_rendered }} hrs</td>
+                <td>
+                    {% if log.status == 'Approved' %}
+                        <span class="badge bg-success">Approved</span>
+                    {% elif log.status == 'Rejected' %}
+                        <span class="badge bg-danger">Rejected</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="POST" class="d-inline">
+                        <input type="hidden" name="log_id" value="{{ log.id }}">
+                        <button type="submit" name="status" value="Approved" class="btn btn-success btn-sm">Approve</button>
+                        <button type="submit" name="status" value="Rejected" class="btn btn-danger btn-sm">Reject</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">Wala pang isinumiteng logs ang iyong mga estudyante.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

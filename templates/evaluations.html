@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Evaluations - Internship Portal{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Evaluation Form</h2>
+    
+    {% if user_role == 'adviser' %}
+        <!-- Upload Form para sa Adviser / Teacher lang -->
+        <div class="card shadow-sm p-4 mb-4" style="max-width: 600px;">
+            <h5 class="mb-3">Mag-upload ng Evaluation Form para sa Estudyante</h5>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label">Pumili ng Estudyante / Internship</label>
+                    <select name="internship_id" class="form-select" required>
+                        <option value="" selected disabled>-- Pumili ng Estudyante --</option>
+                        {% for internship in internships %}
+                        <option value="{{ internship.id }}">ID #{{ internship.id }} - {{ internship.company_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Evaluation Document (PDF o Word)</label>
+                    <input type="file" name="evaluation_file" class="form-control" accept=".pdf,.doc,.docx" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload Evaluation</button>
+            </form>
+        </div>
+
+        <h3>Listahan ng mga Na-upload na Evaluation</h3>
+        <table class="table table-striped mt-3">
+            <thead>
+                <tr>
+                    <th>Internship ID</th>
+                    <th>Status</th>
+                    <th>File / Document</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for eval in evals %}
+                <tr>
+                    <td>Internship ID #{{ eval.internship_id }}</td>
+                    <td><span class="badge bg-success">Uploaded</span></td>
+                    <td>
+                        <a href="/{{ eval.file_path }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            Tingnan / I-download ang File
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted">Wala pang naka-upload na evaluation.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    {% else %}
+        <!-- View Status para sa Student -->
+        <div class="card shadow-sm p-4 mt-4" style="max-width: 600px;">
+            <h5 class="mb-3">Status ng Iyong Evaluation Form</h5>
+            {% if eval_record %}
+                <div class="alert alert-success d-flex align-items-center justify-content-between mb-0" role="alert">
+                    <div>
+                        <strong>Status:</strong> <span class="badge bg-success fs-6 ms-2">Uploaded</span>
+                        <p class="mb-0 mt-1 text-muted small">Na-upload na ng iyong adviser ang iyong evaluation form.</p>
+                    </div>
+                    <a href="/{{ eval_record.file_path }}" target="_blank" class="btn btn-primary btn-sm">
+                        Tingnan ang File
+                    </a>
+                </div>
+            {% else %}
+                <div class="alert alert-warning mb-0" role="alert">
+                    <strong>Status:</strong> <span class="badge bg-secondary fs-6 ms-2">Not Yet Uploaded</span>
+                    <p class="mb-0 mt-1 text-muted small">Wala pang na-upload na evaluation form ang iyong adviser.</p>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
