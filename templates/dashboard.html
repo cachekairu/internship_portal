@@ -2,212 +2,221 @@
 {% block title %}Dashboard - Practicum Portal{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="card shadow-sm p-4 mb-4">
-        <h2>Welcome, {{ user.name }}!</h2>
+<div class="py-2">
+    <div class="card p-4 mb-4 bg-white border-0 shadow-sm">
+        <h2 class="fw-bold text-dark mb-1">Welcome, {{ user.name }}!</h2>
         {% if user.role == 'student' and user.student_number %}
-            <p class="text-muted mb-0">Student Number: <strong>{{ user.student_number }}</strong></p>
+            <p class="text-muted mb-0 small">Student Number: <strong class="text-dark">{{ user.student_number }}</strong></p>
+        {% elif user.role == 'adviser' %}
+            <p class="text-muted mb-0 small">Faculty Adviser Dashboard</p>
         {% endif %}
     </div>
 
     {% if user.role == 'student' %}
         {% if internship %}
             {% if internship.status == 'Approved' %}
-                <div class="card shadow-sm p-4 mb-4">
-                    <div class="row align-items-center">
+                <div class="card p-4 mb-4 bg-white border-0 shadow-sm">
+                    <div class="row align-items-center g-3">
                         <div class="col-md-8">
-                            <h4 class="mb-3">Practicum Progress</h4>
-                            <p class="mb-1"><strong>Company:</strong> {{ internship.company_name }}</p>
-                            <p class="mb-2"><strong>Rendered Hours:</strong> {{ total_hours }} / {{ internship.required_hours }} hrs</p>
+                            <h4 class="fw-bold text-dark mb-3">Practicum Progress</h4>
+                            <p class="mb-1 text-secondary"><strong>Company:</strong> <span class="text-dark">{{ internship.company_name }}</span></p>
+                            <p class="mb-3 text-secondary"><strong>Rendered Hours:</strong> <span class="text-dark fw-semibold">{{ total_hours }} / {{ internship.required_hours }} hrs</span></p>
                             
-                            <div class="mt-3">
-                                <a href="{{ url_for('evaluations', internship_id=internship.id) }}" class="btn btn-sm btn-outline-primary">View Weekly Evaluations & Performance</a>
+                            <div>
+                                <a href="{{ url_for('evaluations', internship_id=internship.id) }}" class="btn btn-sm btn-outline-primary px-3 py-2 fw-medium">View Weekly Evaluations & Performance</a>
                             </div>
                         </div>
-                        <div class="col-md-4 text-center mt-3 mt-md-0">
-                            <div class="p-3 border rounded-pill bg-white shadow-sm d-inline-block px-4 py-3" style="min-width: 150px; border: 3px solid #198754 !important;">
-                                <span class="d-block text-muted small fw-bold text-uppercase">Progress</span>
-                                <span class="fs-3 fw-bold text-success">{{ progress_percentage }}%</span>
+                        <div class="col-md-4 text-center">
+                            <div class="p-3 border rounded-4 bg-light shadow-sm d-inline-block px-4 py-3" style="min-width: 160px; border-color: #e2e8f0 !important;">
+                                <span class="d-block text-muted small fw-bold text-uppercase tracking-wider mb-1">Progress</span>
+                                <span class="fs-2 fw-bold text-success">{{ progress_percentage }}%</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card shadow-sm p-4 mb-4">
-                    <h4 class="mb-3">Add Weekly Log (Week {{ next_week }})</h4>
+                <div class="card p-4 mb-4 bg-white border-0 shadow-sm">
+                    <h4 class="fw-bold text-dark mb-3">Submit Weekly Log (Week {{ next_week }})</h4>
                     <form method="POST" enctype="multipart/form-data" action="{{ url_for('dashboard') }}" class="row g-3" autocomplete="off">
                         <div class="col-md-5">
-                            <label class="form-label">Hours Rendered for Week {{ next_week }}</label>
+                            <label class="form-label fw-medium small text-secondary">Hours Rendered for Week {{ next_week }}</label>
                             <input type="number" step="any" name="hours_rendered" class="form-control" placeholder="e.g. 40" required autocomplete="off">
                         </div>
                         <div class="col-md-5">
-                            <label class="form-label">Time Card Proof (PDF or Image)</label>
-                            <input type="file" name="time_card_file" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" required>
+                            <label class="form-label fw-medium small text-secondary">Time Card Proof (PDF or Image)</label>
+                            <input type="file" name="time_card_file" class="form-control" accept=".pdf,.png,.jpg,.jpeg" required>
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">Submit Log</button>
+                            <button type="submit" class="btn btn-primary w-100 py-2">Submit Log</button>
                         </div>
                     </form>
                 </div>
 
-                <div class="card shadow-sm p-4">
-                    <h4>My Weekly Logs</h4>
-                    <table class="table table-striped align-middle mt-3">
-                        <thead>
-                            <tr>
-                                <th>Week #</th>
-                                <th>Hours</th>
-                                <th>Time Card</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in logs %}
-                            <tr>
-                                <td>Week {{ log.week_number }}</td>
-                                <td>{{ log.hours_rendered }} hrs</td>
-                                <td>
-                                    {% if log.time_card_path %}
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#logModal{{ log.id }}">
-                                            View Time Card
-                                        </button>
+                <div class="card p-4 bg-white border-0 shadow-sm">
+                    <h4 class="fw-bold text-dark mb-3">My Weekly Logs</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Week #</th>
+                                    <th>Hours</th>
+                                    <th>Time Card</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td class="fw-medium">Week {{ log.week_number }}</td>
+                                    <td>{{ log.hours_rendered }} hrs</td>
+                                    <td>
+                                        {% if log.time_card_path %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-toggle="modal" data-bs-target="#logModal{{ log.id }}">
+                                                View
+                                            </button>
 
-                                        <div class="modal fade" id="logModal{{ log.id }}" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog modal-lg modal-dialog-centered">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Time Card - Week {{ log.week_number }}</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body text-center" style="height: 70vh; overflow-y: auto;">
-    {% if log.time_card_path.lower().endswith(('.png', '.jpg', '.jpeg')) %}
-        <img src="/{{ log.time_card_path }}" class="img-fluid h-100 object-fit-contain" alt="Time Card">
-    {% else %}
-        <embed src="/{{ log.time_card_path }}" type="application/pdf" width="100%" height="100%">
-    {% endif %}
-</div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-dark btn-sm" data-bs-dismiss="modal">Close</button>
+                                            <div class="modal fade" id="logModal{{ log.id }}" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                    <div class="modal-content border-0 shadow-lg rounded-4">
+                                                        <div class="modal-header border-0 pb-0">
+                                                            <h5 class="modal-title fw-bold">Time Card - Week {{ log.week_number }}</h5>
+                                                            <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body text-center p-4" style="height: 70vh; overflow-y: auto;">
+                                                            {% if log.time_card_path.lower().endswith(('.png', '.jpg', '.jpeg')) %}
+                                                                <img src="/{{ log.time_card_path }}" class="img-fluid h-100 object-fit-contain rounded-3" alt="Time Card">
+                                                            {% else %}
+                                                                <embed src="/{{ log.time_card_path }}" type="application/pdf" width="100%" height="100%">
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="modal-footer border-0 pt-0">
+                                                            <button type="button" class="btn btn-dark btn-sm px-4" data-bs-dismiss="modal">Close</button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    {% else %}
-                                        <span class="text-muted small">No file</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if log.status == 'Approved' %}
-                                        <span class="badge bg-success">Approved</span>
-                                    {% elif log.status == 'Rejected' %}
-                                        <span class="badge bg-danger">Rejected</span>
-                                    {% else %}
-                                        <span class="badge bg-warning text-dark">Pending</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted">No logs submitted yet.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                        {% else %}
+                                            <span class="text-muted small">No file</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.status == 'Approved' %}
+                                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 fw-medium rounded-pill">Approved</span>
+                                        {% elif log.status == 'Rejected' %}
+                                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 fw-medium rounded-pill">Rejected</span>
+                                        {% else %}
+                                            <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 fw-medium rounded-pill">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No weekly logs submitted yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             {% elif internship.status == 'Rejected' %}
-                <div class="alert alert-danger shadow-sm p-4">
+                <div class="alert alert-danger shadow-sm p-4 border-0 rounded-4 bg-danger bg-opacity-10 text-danger">
                     <h4 class="alert-heading fw-bold">Internship Request Rejected</h4>
-                    <p class="mb-2">Your practicum application for <strong>{{ internship.company_name }}</strong> was rejected by your adviser. Please contact your adviser or register a new valid internship.</p>
+                    <p class="mb-0">Your practicum application for <strong>{{ internship.company_name }}</strong> was rejected by your adviser. Please contact your adviser or register a new valid internship.</p>
                 </div>
             {% else %}
-                <div class="card shadow-sm p-4 text-center py-5">
+                <div class="card p-5 text-center bg-white border-0 shadow-sm">
                     <div class="mb-3">
-                        <span class="badge bg-warning text-dark fs-5 px-3 py-2">Status: Waiting for Adviser Approval</span>
+                        <span class="badge bg-warning bg-opacity-10 text-warning fs-6 px-3 py-2 rounded-pill fw-semibold">Status: Waiting for Adviser Approval</span>
                     </div>
-                    <h4 class="fw-bold">Practicum Details Submitted</h4>
-                    <p class="text-muted mb-1">Company: <strong>{{ internship.company_name }}</strong></p>
+                    <h4 class="fw-bold text-dark mt-2">Practicum Details Submitted</h4>
+                    
                     
                     {% if internship.moa_path %}
                         <div class="mt-3">
-                            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#previewModalStudent">
+                            <button type="button" class="btn btn-outline-primary btn-sm px-4 py-2" data-bs-toggle="modal" data-bs-target="#previewModalStudent">
                                 Preview Submitted MOA
                             </button>
                         </div>
 
                         <div class="modal fade" id="previewModalStudent" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Submitted MOA / Document</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <div class="modal-content border-0 shadow-lg rounded-4">
+                                    <div class="modal-header border-0 pb-0">
+                                        <h5 class="modal-title fw-bold">MOA Document</h5>
+                                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
-                                    <div class="modal-body text-center" style="height: 70vh; overflow-y: auto;">
-    {% if internship.moa_path.lower().endswith(('.png', '.jpg', '.jpeg')) %}
-        <img src="/{{ internship.moa_path }}" class="img-fluid h-100 object-fit-contain" alt="MOA Document">
-    {% else %}
-        <embed src="/{{ internship.moa_path }}" type="application/pdf" width="100%" height="100%">
-    {% endif %}
-</div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-dark btn-sm" data-bs-dismiss="modal">Close</button>
+                                    <div class="modal-body text-center p-4" style="height: 70vh; overflow-y: auto;">
+                                        {% if internship.moa_path.lower().endswith(('.png', '.jpg', '.jpeg')) %}
+                                            <img src="/{{ internship.moa_path }}" class="img-fluid h-100 object-fit-contain rounded-3" alt="MOA Document">
+                                        {% else %}
+                                            <embed src="/{{ internship.moa_path }}" type="application/pdf" width="100%" height="100%">
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer border-0 pt-0">
+                                        <button type="button" class="btn btn-dark btn-sm px-4" data-bs-dismiss="modal">Close</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     {% endif %}
 
-                    <p class="text-muted small mt-3">Your weekly log submission and progress tracking are temporarily locked until your adviser approves your internship request.</p>
+                    <p class="text-muted small mt-4">Your weekly log submission and progress tracking are temporarily locked</p>
                 </div>
             {% endif %}
         {% else %}
-            <div class="alert alert-info">
-                You have no registered practicum details. 
-                <a href="{{ url_for('add_internship') }}" class="alert-link">Click here to add.</a>
+            <div class="card p-5 text-center bg-white border-0 shadow-sm">
+                <h5 class="fw-bold text-dark mb-2">You have no registered practicum details.</h5>
+                <p class="text-muted small mb-3">Click the button below to add your company and adviser.</p>
+                <div>
+                    <a href="{{ url_for('add_internship') }}" class="btn btn-primary px-4 py-2">Register Practicum Details</a>
+                </div>
             </div>
         {% endif %}
     {% elif user.role == 'adviser' %}
-        <div class="card shadow-sm p-4">
-            <h4 class="mb-3">My Assigned Students</h4>
+        <div class="card p-4 bg-white border-0 shadow-sm">
+            <h4 class="fw-bold text-dark mb-3">Assigned Students</h4>
             
             <form method="GET" action="{{ url_for('dashboard') }}" class="row g-2 mb-4" autocomplete="off">
                 <div class="col-md-5">
-                    <input type="text" name="search_query" class="form-control" value="{{ request.args.get('search_query', '') }}" placeholder="Search by Student Number or Full Name..." autocomplete="off">
+                    <input type="text" name="search_query" class="form-control" value="{{ request.args.get('search_query', '') }}" placeholder="Search by Student Number or Name..." autocomplete="off">
                 </div>
                 <div class="col-md-auto d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Search</button>
+                    <button type="submit" class="btn btn-primary px-4">Search</button>
                     {% if request.args.get('search_query') %}
-                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary fw-bold" title="Clear search">✕</a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary d-flex align-items-center px-3 fw-bold" title="Clear search">✕</a>
                     {% endif %}
                 </div>
             </form>
 
-            <table class="table table-hover align-middle" style="cursor: pointer;">
-                <thead class="table-light">
-                    <tr>
-                        <th>Student Number</th>
-                        <th>Full Name</th>
-                        <th>Course</th>
-                        <th>Email</th>
-                        <th>Rendered Hours</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in students %}
-                    <tr onclick="window.location.href='{{ url_for('evaluations', internship_id=item.internship.id) }}'" title="Click to view performance">
-                        <td><strong>{{ item.student.student_number or 'N/A' }}</strong></td>
-                        <td>{{ item.student.name }}</td>
-                        <td>{{ item.student.course }}</td>
-                        <td>{{ item.student.email }}</td>
-                        <td>{{ item.total_hours }} / {{ item.internship.required_hours }} hrs</td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="text-center text-muted">No approved students assigned yet.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="cursor: pointer;">
+                    <thead>
+                        <tr>
+                            <th>Student Number</th>
+                            <th>Full Name</th>
+                            <th>Course</th>
+                            <th>Email</th>
+                            <th>Rendered Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in students %}
+                        <tr onclick="window.location.href='{{ url_for('evaluations', internship_id=item.internship.id) }}'" title="Click to view performance">
+                            <td><strong class="text-dark">{{ item.student.student_number or 'N/A' }}</strong></td>
+                            <td class="fw-medium">{{ item.student.name }}</td>
+                            <td><span class="badge bg-light text-dark border px-2 py-1">{{ item.student.course }}</span></td>
+                            <td class="text-muted">{{ item.student.email }}</td>
+                            <td class="fw-semibold text-success">{{ item.total_hours }} / {{ item.internship.required_hours }} hrs</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No approved students assigned yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     {% endif %}
 </div>
-{% endblock %}e
+{% endblock %}

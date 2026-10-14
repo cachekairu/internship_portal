@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - Manage Internships{% endblock %}
+
+{% block content %}
+<div class="py-2">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">Admin Internship Records</h3>
+            <p class="text-muted small mb-0">Pamamahala ng mga rehistradong kumpanya at practicum status.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary btn-sm px-3">Manage Users</a>
+            <a href="{{ url_for('admin_internships') }}" class="btn btn-primary btn-sm px-3">Manage Internships</a>
+        </div>
+    </div>
+
+    <div class="card p-4 bg-white border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Internship ID</th>
+                        <th>Student Name</th>
+                        <th>Company Name</th>
+                        <th>Required Hours</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for internship, student in internships %}
+                    <tr>
+                        <td>{{ internship.id }}</td>
+                        <td class="fw-medium">{{ student.name }}</td>
+                        <td>{{ internship.company_name }}</td>
+                        <td>{{ internship.required_hours }} hrs</td>
+                        <td>
+                            {% if internship.status == 'Approved' %}
+                                <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 fw-medium rounded-pill">Approved</span>
+                            {% elif internship.status == 'Rejected' %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-1 fw-medium rounded-pill">Rejected</span>
+                            {% else %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-1 fw-medium rounded-pill">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin_delete_internship', internship_id=internship.id) }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang record na ito?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

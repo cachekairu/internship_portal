@@ -68,6 +68,7 @@ class Evaluation(db.Model):
     file_path = db.Column(db.String(255), nullable=False)
     remarks = db.Column(db.Text, nullable=True)
 
+
 # ----------------- ROUTES -----------------
 
 @app.route('/')
@@ -203,8 +204,14 @@ def dashboard():
             eval_records=eval_records,
             next_week=next_week
         )
-    else:
+    elif user.role == 'adviser':
         search_query = request.args.get('search_query', '').strip()
+        pending_requests_count = Internship.query.filter_by(adviser_id=user.id, status='Pending').count()
+        
+        # Count pending weekly logs for students under this adviser
+        pending_logs_count = db.session.query(WeeklyLog).\
+            join(Internship, WeeklyLog.internship_id == Internship.id).\
+            filter(Internship.adviser_id == user.id, WeeklyLog.status == 'Pending').count()
 
         query = db.session.query(User, Internship).\
             join(Internship, User.id == Internship.student_id).\
@@ -229,7 +236,9 @@ def dashboard():
                 'total_hours': total_hours
             })
 
-        return render_template('dashboard.html', user=user, students=students)
+        return render_template('dashboard.html', user=user, students=students, pending_requests_count=pending_requests_count, pending_logs_count=pending_logs_count)
+    else:
+        return redirect(url_for('admin_users'))
 
 @app.route('/requests', methods=['GET', 'POST'])
 def requests_page():
@@ -249,12 +258,17 @@ def requests_page():
             flash(f'Internship request status updated to {action_status}!', 'success')
             return redirect(url_for('requests_page'))
 
+    pending_requests_count = Internship.query.filter_by(adviser_id=user.id, status='Pending').count()
+    pending_logs_count = db.session.query(WeeklyLog).\
+        join(Internship, WeeklyLog.internship_id == Internship.id).\
+        filter(Internship.adviser_id == user.id, WeeklyLog.status == 'Pending').count()
+        
     pending_query = db.session.query(User, Internship).\
         join(Internship, User.id == Internship.student_id).\
         filter(Internship.adviser_id == user.id, Internship.status == 'Pending')
     pending_requests = pending_query.all()
 
-    return render_template('requests.html', user=user, pending_requests=pending_requests)
+    return render_template('requests.html', user=user, pending_requests=pending_requests, pending_requests_count=pending_requests_count, pending_logs_count=pending_logs_count)
 
 @app.route('/logout')
 def logout():
@@ -357,10 +371,12 @@ def review_logs():
 
     logs = query.all()
     companies = db.session.query(Internship.company_name).filter_by(adviser_id=session['user_id']).distinct().all()
+    pending_requests_count = Internship.query.filter_by(adviser_id=session['user_id'], status='Pending').count()
+    pending_logs_count = db.session.query(WeeklyLog).\
+        join(Internship, WeeklyLog.internship_id == Internship.id).\
+        filter(Internship.adviser_id == session['user_id'], WeeklyLog.status == 'Pending').count()
 
-    # I-compute din ang allowed_min_week para sa template kung kinakailangan
-    # Pero para sa review_logs, pwede nating i-compute per log o i-pass kung may partikular na internship.
-    return render_template('review_logs.html', logs=logs, companies=companies)
+    return render_template('review_logs.html', logs=logs, companies=companies, pending_requests_count=pending_requests_count, pending_logs_count=pending_logs_count)
 
 @app.route('/evaluations/<int:internship_id>', methods=['GET', 'POST'])
 def evaluations(internship_id):
@@ -462,10 +478,13 @@ def evaluations(internship_id):
     if internship.required_hours > 0:
         progress_percentage = min(round((total_hours / internship.required_hours) * 100, 1), 100)
 
-    # Compute max_week and allowed_min_week para maipasa sa template
     max_week_record = WeeklyLog.query.filter_by(internship_id=internship.id).order_by(WeeklyLog.week_number.desc()).first()
     max_week = max_week_record.week_number if max_week_record else 0
     allowed_min_week = max_week - 2
+    pending_requests_count = Internship.query.filter_by(adviser_id=user_id, status='Pending').count() if user_role == 'adviser' else 0
+    pending_logs_count = db.session.query(WeeklyLog).\
+        join(Internship, WeeklyLog.internship_id == Internship.id).\
+        filter(Internship.adviser_id == user_id, WeeklyLog.status == 'Pending').count() if user_role == 'adviser' else 0
 
     return render_template(
         'evaluations.html', 
@@ -477,8 +496,84 @@ def evaluations(internship_id):
         logs=logs,
         total_hours=total_hours,
         progress_percentage=progress_percentage,
-        allowed_min_week=allowed_min_week
+        allowed_min_week=allowed_min_week,
+        pending_requests_count=pending_requests_count,
+        pending_logs_count=pending_logs_count
     )
+
+
+# ----------------- ADMIN MANAGEMENT ROUTES -----------------
+
+@app.route('/admin/users')
+def admin_users():
+    if 'user_id' not in session or session.get('user_role') != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+    
+    users = User.query.all()
+    return render_template('admin_users.html', users=users)
+
+@app.route('/admin/users/edit/<int:user_id>', methods=['GET', 'POST'])
+def admin_edit_user(user_id):
+    if 'user_id' not in session or session.get('user_role') != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+    
+    target_user = User.query.get_or_404(user_id)
+    
+    if request.method == 'POST':
+        target_user.name = request.form.get('name', '').strip()
+        target_user.email = request.form.get('email', '').strip()
+        target_user.student_number = request.form.get('student_number', '').strip()
+        target_user.course = request.form.get('course', '').strip()
+        target_user.role = request.form.get('role', '').strip()
+        
+        password = request.form.get('password', '').strip()
+        if password:
+            target_user.password_hash = generate_password_hash(password)
+            
+        db.session.commit()
+        flash('User updated successfully!', 'success')
+        return redirect(url_for('admin_users'))
+        
+    return render_template('admin_edit_user.html', target_user=target_user)
+
+@app.route('/admin/users/delete/<int:user_id>', methods=['POST'])
+def admin_delete_user(user_id):
+    if 'user_id' not in session or session.get('user_role') != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+        
+    target_user = User.query.get_or_404(user_id)
+    if target_user.id == session['user_id']:
+        flash('You cannot delete your own admin account.', 'danger')
+        return redirect(url_for('admin_users'))
+        
+    db.session.delete(target_user)
+    db.session.commit()
+    flash('User deleted successfully!', 'success')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/internships')
+def admin_internships():
+    if 'user_id' not in session or session.get('user_role') != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+        
+    internships = db.session.query(Internship, User).join(User, Internship.student_id == User.id).all()
+    return render_template('admin_internships.html', internships=internships)
+
+@app.route('/admin/internships/delete/<int:internship_id>', methods=['POST'])
+def admin_delete_internship(internship_id):
+    if 'user_id' not in session or session.get('user_role') != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+        
+    target_internship = Internship.query.get_or_404(internship_id)
+    db.session.delete(target_internship)
+    db.session.commit()
+    flash('Internship record deleted successfully!', 'success')
+    return redirect(url_for('admin_internships'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
