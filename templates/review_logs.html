@@ -55,11 +55,6 @@
             </thead>
             <tbody>
                 {% for log, student, internship in logs %}
-                {% set max_w = namespace(val=0) %}
-                {% set all_logs = namespace(items=[]) %}
-                {# Para makuha ang max week ng partikular na internship na ito #}
-                {% set internship_logs = namespace(max=0) %}
-                {# Simplified check o direktang i-allow kung Pending o kaya ay nasa 3 recent weeks #}
                 <tr>
                     <td><strong>{{ student.name }}</strong></td>
                     <td>{{ internship.company_name }}</td>
