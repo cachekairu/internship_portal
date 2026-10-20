@@ -167,28 +167,39 @@ def login():
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
 
+        print(f"DEBUG TRY LOGIN -> Email: '{email}' | Password: '{password}'")
+
         user = None
         role = None
 
-        # 1. Subukang hanapin sa Admin table
         admin = Admin.query.filter_by(email=email).first()
-        if admin and check_password_hash(admin.password_hash, password):
-            user = admin
-            role = 'admin'
+        print(f"DEBUG ADMIN FOUND: {admin}")
+        if admin:
+            match = check_password_hash(admin.password_hash, password)
+            print(f"DEBUG ADMIN PASSWORD MATCH: {match}")
+            if match:
+                user = admin
+                role = 'admin'
 
-        # 2. Kung hindi admin, subukang hanapin sa Adviser table
         if not user:
             adviser = Adviser.query.filter_by(email=email).first()
-            if adviser and check_password_hash(adviser.password_hash, password):
-                user = adviser
-                role = 'adviser'
+            print(f"DEBUG ADVISER FOUND: {adviser}")
+            if adviser:
+                match = check_password_hash(adviser.password_hash, password)
+                print(f"DEBUG ADVISER PASSWORD MATCH: {match}")
+                if match:
+                    user = adviser
+                    role = 'adviser'
 
-        # 3. Kung hindi rin adviser, subukang hanapin sa Student table
         if not user:
             student = Student.query.filter_by(email=email).first()
-            if student and check_password_hash(student.password_hash, password):
-                user = student
-                role = 'student'
+            print(f"DEBUG STUDENT FOUND: {student}")
+            if student:
+                match = check_password_hash(student.password_hash, password)
+                print(f"DEBUG STUDENT PASSWORD MATCH: {match}")
+                if match:
+                    user = student
+                    role = 'student'
 
         if user:
             session['user_id'] = user.id
