@@ -170,17 +170,20 @@ def login():
         user = None
         role = None
 
+        # 1. Subukang hanapin sa Admin table
         admin = Admin.query.filter_by(email=email).first()
         if admin and check_password_hash(admin.password_hash, password):
             user = admin
             role = 'admin'
 
+        # 2. Kung hindi admin, subukang hanapin sa Adviser table
         if not user:
             adviser = Adviser.query.filter_by(email=email).first()
             if adviser and check_password_hash(adviser.password_hash, password):
                 user = adviser
                 role = 'adviser'
 
+        # 3. Kung hindi rin adviser, subukang hanapin sa Student table
         if not user:
             student = Student.query.filter_by(email=email).first()
             if student and check_password_hash(student.password_hash, password):
