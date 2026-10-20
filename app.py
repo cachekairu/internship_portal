@@ -22,24 +22,6 @@ def allowed_file(filename):
 
 db = SQLAlchemy(app)
 
-with app.app_context():
-    db.create_all()
-    # Auto-fix or create admin and adviser accounts with correct hash on startup
-    admin = Admin.query.filter_by(email='admin@admin.com').first()
-    correct_hash = generate_password_hash('admin123')
-    if admin:
-        admin.password_hash = correct_hash
-    else:
-        db.session.add(Admin(name='Administrator', email='admin@admin.com', password_hash=correct_hash, role='admin'))
-    
-    adviser = Adviser.query.filter_by(email='adviser@icct.edu.ph').first()
-    if adviser:
-        adviser.password_hash = correct_hash
-    else:
-        db.session.add(Adviser(name='Prof. Maria Santos', email='adviser@icct.edu.ph', password_hash=correct_hash, role='adviser'))
-    
-    db.session.commit()
-
 COURSE_HOURS = {
     'BSIT': 480,
     'BSCS': 480,
@@ -127,30 +109,7 @@ with app.app_context():
     else:
         db.session.add(Adviser(name='Prof. Maria Santos', email='adviser@icct.edu.ph', password_hash=correct_hash, role='adviser'))
     
-    db.session.commit() 
-
-
-# ----------------- RECOVERY ROUTE -----------------
-@app.route('/fix-accounts')
-def fix_accounts():
-    # 1. Ayusin ang Admin
-    admin = Admin.query.filter_by(email='admin@admin.com').first()
-    admin_pass = generate_password_hash('admin123')
-    if admin:
-        admin.password_hash = admin_pass
-    else:
-        db.session.add(Admin(name='Administrator', email='admin@admin.com', password_hash=admin_pass, role='admin'))
-
-    # 2. Ayusin ang Adviser
-    adviser = Adviser.query.filter_by(email='adviser@icct.edu.ph').first()
-    adviser_pass = generate_password_hash('admin123')
-    if adviser:
-        adviser.password_hash = adviser_pass
-    else:
-        db.session.add(Adviser(name='Prof. Maria Santos', email='adviser@icct.edu.ph', password_hash=adviser_pass, role='adviser'))
-
     db.session.commit()
-    return "Accounts successfully fixed! You can now login as admin (admin@admin.com / admin123) or adviser (adviser@icct.edu.ph / admin123)."
 
 
 # ----------------- ROUTES -----------------
@@ -205,39 +164,25 @@ def login():
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
 
-        print(f"DEBUG TRY LOGIN -> Email: '{email}' | Password: '{password}'")
-
         user = None
         role = None
 
         admin = Admin.query.filter_by(email=email).first()
-        print(f"DEBUG ADMIN FOUND: {admin}")
-        if admin:
-            match = check_password_hash(admin.password_hash, password)
-            print(f"DEBUG ADMIN PASSWORD MATCH: {match}")
-            if match:
-                user = admin
-                role = 'admin'
+        if admin and check_password_hash(admin.password_hash, password):
+            user = admin
+            role = 'admin'
 
         if not user:
             adviser = Adviser.query.filter_by(email=email).first()
-            print(f"DEBUG ADVISER FOUND: {adviser}")
-            if adviser:
-                match = check_password_hash(adviser.password_hash, password)
-                print(f"DEBUG ADVISER PASSWORD MATCH: {match}")
-                if match:
-                    user = adviser
-                    role = 'adviser'
+            if adviser and check_password_hash(adviser.password_hash, password):
+                user = adviser
+                role = 'adviser'
 
         if not user:
             student = Student.query.filter_by(email=email).first()
-            print(f"DEBUG STUDENT FOUND: {student}")
-            if student:
-                match = check_password_hash(student.password_hash, password)
-                print(f"DEBUG STUDENT PASSWORD MATCH: {match}")
-                if match:
-                    user = student
-                    role = 'student'
+            if student and check_password_hash(student.password_hash, password):
+                user = student
+                role = 'student'
 
         if user:
             session['user_id'] = user.id
