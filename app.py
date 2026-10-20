@@ -107,6 +107,29 @@ class Evaluation(db.Model):
     remarks = db.Column(db.Text, nullable=True)
 
 
+# ----------------- APP CONTEXT & AUTO-FIX ACCOUNTS -----------------
+with app.app_context():
+    db.create_all()
+    
+    correct_hash = generate_password_hash('admin123')
+    
+    # Auto-fix Admin
+    admin = Admin.query.filter_by(email='admin@admin.com').first()
+    if admin:
+        admin.password_hash = correct_hash
+    else:
+        db.session.add(Admin(name='Administrator', email='admin@admin.com', password_hash=correct_hash, role='admin'))
+    
+    # Auto-fix Adviser
+    adviser = Adviser.query.filter_by(email='adviser@icct.edu.ph').first()
+    if adviser:
+        adviser.password_hash = correct_hash
+    else:
+        db.session.add(Adviser(name='Prof. Maria Santos', email='adviser@icct.edu.ph', password_hash=correct_hash, role='adviser'))
+    
+    db.session.commit() 
+
+
 # ----------------- RECOVERY ROUTE -----------------
 @app.route('/fix-accounts')
 def fix_accounts():
