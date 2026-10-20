@@ -6,7 +6,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-bold text-dark mb-1">Admin Management Panel</h3>
-            <p class="text-muted small mb-0">Pamamahala ng lahat ng user accounts (Students, Advisers, Admins).</p>
+            <p class="text-muted small mb-0">Pamamahala ng mga user accounts (Advisers at Admins).</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ url_for('admin_add_user') }}" class="btn btn-success btn-sm px-3">+ Add New User</a>
@@ -15,51 +15,7 @@
         </div>
     </div>
 
-    <!-- 1. REGISTERED STUDENTS TABLE -->
-    <div class="card p-4 bg-white border-0 shadow-sm mb-4">
-        <h5 class="fw-bold text-dark mb-3">Registered Students</h5>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>ID</th>
-                        <th>Student Number</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Course</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for u in students %}
-                    <tr>
-                        <td>{{ u.id }}</td>
-                        <td>{{ u.student_number or 'N/A' }}</td>
-                        <td class="fw-medium">{{ u.name }}</td>
-                        <td>{{ u.email }}</td>
-                        <td>{{ u.course or 'N/A' }}</td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                <a href="{{ url_for('admin_edit_user', user_id=u.id) }}" class="btn btn-sm btn-warning text-dark fw-medium">Edit</a>
-                                {% if u.id != session.get('user_id') %}
-                                <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang student na ito?');">
-                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                                </form>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-3">Wala pang rehistradong estudyante.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- 2. FACULTY ADVISERS TABLE -->
+    <!-- 1. FACULTY ADVISERS TABLE -->
     <div class="card p-4 bg-white border-0 shadow-sm mb-4">
         <h5 class="fw-bold text-dark mb-3">Faculty Advisers</h5>
         <div class="table-responsive">
@@ -103,7 +59,7 @@
         </div>
     </div>
 
-    <!-- 3. ADMINS TABLE -->
+    <!-- 2. ADMINISTRATORS TABLE -->
     <div class="card p-4 bg-white border-0 shadow-sm">
         <h5 class="fw-bold text-dark mb-3">Administrators</h5>
         <div class="table-responsive">

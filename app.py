@@ -509,10 +509,10 @@ def admin_users():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
     
-    students = User.query.filter_by(role='student').all()
     advisers = User.query.filter_by(role='adviser').all()
     admins = User.query.filter_by(role='admin').all()
-    return render_template('admin_users.html', students=students, advisers=advisers, admins=admins)
+    
+    return render_template('admin_users.html', advisers=advisers, admins=admins)
 
 @app.route('/admin/users/add', methods=['GET', 'POST'])
 def admin_add_user():
