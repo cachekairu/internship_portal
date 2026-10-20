@@ -92,6 +92,29 @@ class Evaluation(db.Model):
     remarks = db.Column(db.Text, nullable=True)
 
 
+# ----------------- RECOVERY ROUTE -----------------
+@app.route('/fix-accounts')
+def fix_accounts():
+    # 1. Ayusin ang Admin
+    admin = Admin.query.filter_by(email='admin@admin.com').first()
+    admin_pass = generate_password_hash('admin123')
+    if admin:
+        admin.password_hash = admin_pass
+    else:
+        db.session.add(Admin(name='Administrator', email='admin@admin.com', password_hash=admin_pass, role='admin'))
+
+    # 2. Ayusin ang Adviser
+    adviser = Adviser.query.filter_by(email='adviser@icct.edu.ph').first()
+    adviser_pass = generate_password_hash('admin123')
+    if adviser:
+        adviser.password_hash = adviser_pass
+    else:
+        db.session.add(Adviser(name='Prof. Maria Santos', email='adviser@icct.edu.ph', password_hash=adviser_pass, role='adviser'))
+
+    db.session.commit()
+    return "Accounts successfully fixed! You can now login as admin (admin@admin.com / admin123) or adviser (adviser@icct.edu.ph / admin123)."
+
+
 # ----------------- ROUTES -----------------
 
 @app.route('/')

@@ -6,7 +6,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-bold text-dark mb-1">Admin Internship Records</h3>
-            <p class="text-muted small mb-0">Pamamahala ng mga rehistradong kumpanya, application, at estudyante.</p>
+            <p class="text-muted small mb-0">Manage registered companies, applications, and students.</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary btn-sm px-3">Manage Users</a>
@@ -49,7 +49,7 @@
                                     <input type="hidden" name="status" value="Rejected">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
                                 </form>
-                                <form method="POST" action="{{ url_for('admin_delete_internship', internship_id=internship.id) }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang record na ito?');">
+                                <form method="POST" action="{{ url_for('admin_delete_internship', internship_id=internship.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this record?');">
                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                 </form>
                             </div>
@@ -57,7 +57,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-3">Walang pending na internship.</td>
+                        <td colspan="6" class="text-center text-muted py-3">No pending internships found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -91,7 +91,7 @@
                         <td>
                             <div class="d-flex gap-2">
                                 <a href="{{ url_for('admin_edit_user', user_id=u.id, role='student') }}" class="btn btn-sm btn-warning text-dark fw-medium">Edit</a>
-                                <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id, role='student') }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang student na ito?');">
+                                <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id, role='student') }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this student?');">
                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                 </form>
                             </div>
@@ -99,7 +99,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-3">Wala pang rehistradong estudyante.</td>
+                        <td colspan="6" class="text-center text-muted py-3">No registered students found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -35,12 +35,12 @@
                 </div>
                 {% endif %}
                 <div class="col-md-12">
-                    <label class="form-label fw-medium small text-secondary">New Password (Opsyonal)</label>
-                    <input type="password" name="password" class="form-control" placeholder="Iwanang walang laman kung ayaw baguhin">
+                    <label class="form-label fw-medium small text-secondary">New Password (Optional)</label>
+                    <input type="password" name="password" class="form-control" placeholder="Leave blank if you don't want to change">
                 </div>
             </div>
             <div class="mt-4 text-end">
-                <button type="submit" class="btn btn-primary px-4">I-save ang Account Info</button>
+                <button type="submit" class="btn btn-primary px-4">Save Account Info</button>
             </div>
         </form>
     </div>
@@ -80,11 +80,11 @@
                         </div>
                     </div>
                     <div class="mt-3 text-end">
-                        <button type="submit" class="btn btn-success px-4">I-save ang Internship Data</button>
+                        <button type="submit" class="btn btn-success px-4">Save Internship Data</button>
                     </div>
                 </form>
             {% else %}
-                <p class="text-muted">Wala pang naire-rehistrong internship ang estudyanteng ito.</p>
+                <p class="text-muted">No registered internship found for this student.</p>
             {% endif %}
         </div>
 
@@ -121,14 +121,14 @@
                                     </select>
                                     <button type="submit" class="btn btn-sm btn-primary">Save</button>
                                 </form>
-                                <form method="POST" action="{{ url_for('admin_delete_log', log_id=log.id) }}" class="d-inline" onsubmit="return confirm('Burahin ang log na ito?');">
+                                <form method="POST" action="{{ url_for('admin_delete_log', log_id=log.id) }}" class="d-inline" onsubmit="return confirm('Delete this log?');">
                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                 </form>
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-3">Walang weekly logs.</td>
+                            <td colspan="4" class="text-center text-muted py-3">No weekly logs found.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -163,7 +163,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-3">Walang nakatalagang estudyante sa adviser na ito.</td>
+                            <td colspan="5" class="text-center text-muted py-3">No assigned students under this adviser.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
