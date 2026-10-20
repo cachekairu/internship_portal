@@ -783,6 +783,26 @@ def admin_delete_internship(internship_id):
     db.session.commit()
     flash('Internship record deleted successfully!', 'success')
     return redirect(url_for('admin_internships'))
+@app.route('/fix-accounts')
+def fix_accounts():
+    correct_hash = generate_password_hash('admin123')
+    
+    # Force fix or create Admin
+    admin = Admin.query.filter_by(email='admin@admin.com').first()
+    if admin:
+        admin.password_hash = correct_hash
+    else:
+        db.session.add(Admin(name='Administrator', email='admin@admin.com', password_hash=correct_hash, role='admin'))
+    
+    # Force fix or create Adviser
+    adviser = Adviser.query.filter_by(email='adviser@icct.edu.ph').first()
+    if adviser:
+        adviser.password_hash = correct_hash
+    else:
+        db.session.add(Adviser(name='Prof. Maria Santos', email='adviser@icct.edu.ph', password_hash=correct_hash, role='adviser'))
+    
+    db.session.commit()
+    return "Accounts successfully forced & fixed! Try logging in now."
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
