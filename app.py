@@ -666,9 +666,9 @@ def admin_internships():
         return redirect(url_for('login'))
         
     pending_internships = db.session.query(Internship, User).join(User, Internship.student_id == User.id).filter(Internship.status == 'Pending').all()
-    active_internships = db.session.query(Internship, User).join(User, Internship.student_id == User.id).filter(Internship.status == 'Approved').all()
+    students = User.query.filter_by(role='student').all()
     
-    return render_template('admin_internships.html', pending_internships=pending_internships, active_internships=active_internships)
+    return render_template('admin_internships.html', pending_internships=pending_internships, students=students)
 
 @app.route('/admin/internships/status/<int:internship_id>', methods=['POST'])
 def admin_update_internship_status(internship_id):
