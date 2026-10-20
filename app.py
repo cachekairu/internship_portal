@@ -208,7 +208,6 @@ def dashboard():
         search_query = request.args.get('search_query', '').strip()
         pending_requests_count = Internship.query.filter_by(adviser_id=user.id, status='Pending').count()
         
-        # Count pending weekly logs for students under this adviser
         pending_logs_count = db.session.query(WeeklyLog).\
             join(Internship, WeeklyLog.internship_id == Internship.id).\
             filter(Internship.adviser_id == user.id, WeeklyLog.status == 'Pending').count()
@@ -513,7 +512,6 @@ def admin_users():
     students = User.query.filter_by(role='student').all()
     advisers = User.query.filter_by(role='adviser').all()
     admins = User.query.filter_by(role='admin').all()
-    
     return render_template('admin_users.html', students=students, advisers=advisers, admins=admins)
 
 @app.route('/admin/users/add', methods=['GET', 'POST'])
@@ -663,7 +661,6 @@ def admin_delete_log(log_id):
 
 @app.route('/admin/internships')
 def admin_internships():
-    def admin_internships():
     if 'user_id' not in session or session.get('user_role') != 'admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
