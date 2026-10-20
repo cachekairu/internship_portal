@@ -510,8 +510,45 @@ def admin_users():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
     
-    users = User.query.all()
-    return render_template('admin_users.html', users=users)
+    students = User.query.filter_by(role='student').all()
+    staff = User.query.filter(User.role.in_(['adviser', 'admin'])).all()
+    return render_template('admin_users.html', students=students, staff=staff)
+
+@app.route('/admin/users/add', methods=['GET', 'POST'])
+def admin_add_user():
+    if 'user_id' not in session or session.get('user_role') != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+        
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        student_number = request.form.get('student_number', '').strip()
+        course = request.form.get('course', '').strip()
+        role = request.form.get('role', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('Email already registered.', 'danger')
+            return redirect(url_for('admin_add_user'))
+            
+        hashed_password = generate_password_hash(password)
+        new_user = User(
+            name=name,
+            email=email,
+            student_number=student_number if student_number else None,
+            course=course if course else None,
+            role=role,
+            password_hash=hashed_password
+        )
+        
+        db.session.add(new_user)
+        db.session.commit()
+        flash('New user added successfully!', 'success')
+        return redirect(url_for('admin_users'))
+        
+    return render_template('admin_add_user.html')
 
 @app.route('/admin/users/edit/<int:user_id>', methods=['GET', 'POST'])
 def admin_edit_user(user_id):
