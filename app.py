@@ -502,7 +502,7 @@ def evaluations(internship_id):
     )
 
 
-# ----------------- ADMIN MANAGEMENT ROUTES -----------------
+# ----------------- ADMIN MANAGEMENT & FULL ACCESS ROUTES -----------------
 
 @app.route('/admin/users')
 def admin_users():
@@ -561,8 +561,8 @@ def admin_edit_user(user_id):
     if request.method == 'POST':
         target_user.name = request.form.get('name', '').strip()
         target_user.email = request.form.get('email', '').strip()
-        target_user.student_number = request.form.get('student_number', '').strip()
-        target_user.course = request.form.get('course', '').strip()
+        target_user.student_number = request.form.get('student_number', '').strip() or None
+        target_user.course = request.form.get('course', '').strip() or None
         target_user.role = request.form.get('role', '').strip()
         
         password = request.form.get('password', '').strip()
@@ -570,10 +570,34 @@ def admin_edit_user(user_id):
             target_user.password_hash = generate_password_hash(password)
             
         db.session.commit()
-        flash('User updated successfully!', 'success')
-        return redirect(url_for('admin_users'))
+        flash('User account updated successfully!', 'success')
+        return redirect(url_for('admin_edit_user', user_id=user_id))
         
-    return render_template('admin_edit_user.html', target_user=target_user)
+    internship = None
+    logs = []
+    advisers = []
+    assigned_students = []
+
+    if target_user.role == 'student':
+        internship = Internship.query.filter_by(student_id=target_user.id).first()
+        if internship:
+            logs = WeeklyLog.query.filter_by(internship_id=internship.id).order_by(WeeklyLog.week_number.asc()).all()
+        advisers = User.query.filter_by(role='adviser').all()
+    elif target_user.role == 'adviser':
+        raw_students = db.session.query(User, Internship).\
+            join(Internship, User.id == Internship.student_id).\
+            filter(Internship.adviser_id == target_user.id).all()
+        for student, intern in raw_students:
+            assigned_students.append({'student': student, 'internship': intern})
+
+    return render_template(
+        'admin_edit_user.html',
+        target_user=target_user,
+        internship=internship,
+        logs=logs,
+        advisers=advisers,
+        assigned_students=assigned_students
+    )
 
 @app.route('/admin/users/delete/<int:user_id>', methods=['POST'])
 def admin_delete_user(user_id):
@@ -590,6 +614,50 @@ def admin_delete_user(user_id):
     db.session.commit()
     flash('User deleted successfully!', 'success')
     return redirect(url_for('admin_users'))
+
+@app.route('/admin/internship/update/<int:internship_id>', methods=['POST'])
+def admin_update_internship(internship_id):
+    if 'user_id' not in session or session.get('user_role') != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+        
+    internship = Internship.query.get_or_404(internship_id)
+    internship.company_name = request.form.get('company_name', '').strip()
+    internship.required_hours = float(request.form.get('required_hours', 480))
+    internship.status = request.form.get('status')
+    internship.adviser_id = int(request.form.get('adviser_id'))
+    
+    db.session.commit()
+    flash('Internship data updated successfully!', 'success')
+    return redirect(url_for('admin_edit_user', user_id=internship.student_id))
+
+@app.route('/admin/log/update/<int:log_id>', methods=['POST'])
+def admin_update_log(log_id):
+    if 'user_id' not in session or session.get('user_role') != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+        
+    log = WeeklyLog.query.get_or_404(log_id)
+    log.hours_rendered = float(request.form.get('hours_rendered', 0))
+    log.status = request.form.get('status')
+    
+    db.session.commit()
+    internship = Internship.query.get(log.internship_id)
+    flash('Weekly log updated successfully!', 'success')
+    return redirect(url_for('admin_edit_user', user_id=internship.student_id))
+
+@app.route('/admin/log/delete/<int:log_id>', methods=['POST'])
+def admin_delete_log(log_id):
+    if 'user_id' not in session or session.get('user_role') != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+        
+    log = WeeklyLog.query.get_or_404(log_id)
+    internship = Internship.query.get(log.internship_id)
+    db.session.delete(log)
+    db.session.commit()
+    flash('Weekly log deleted successfully!', 'success')
+    return redirect(url_for('admin_edit_user', user_id=internship.student_id))
 
 @app.route('/admin/internships')
 def admin_internships():
