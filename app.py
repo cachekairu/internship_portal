@@ -663,12 +663,29 @@ def admin_delete_log(log_id):
 
 @app.route('/admin/internships')
 def admin_internships():
+    def admin_internships():
     if 'user_id' not in session or session.get('user_role') != 'admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
         
-    internships = db.session.query(Internship, User).join(User, Internship.student_id == User.id).all()
-    return render_template('admin_internships.html', internships=internships)
+    pending_internships = db.session.query(Internship, User).join(User, Internship.student_id == User.id).filter(Internship.status == 'Pending').all()
+    active_internships = db.session.query(Internship, User).join(User, Internship.student_id == User.id).filter(Internship.status == 'Approved').all()
+    
+    return render_template('admin_internships.html', pending_internships=pending_internships, active_internships=active_internships)
+
+@app.route('/admin/internships/status/<int:internship_id>', methods=['POST'])
+def admin_update_internship_status(internship_id):
+    if 'user_id' not in session or session.get('user_role') != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+        
+    internship = Internship.query.get_or_404(internship_id)
+    status = request.form.get('status')
+    if status in ['Approved', 'Rejected', 'Pending']:
+        internship.status = status
+        db.session.commit()
+        flash(f'Internship status updated to {status}!', 'success')
+    return redirect(url_for('admin_internships'))
 
 @app.route('/admin/internships/delete/<int:internship_id>', methods=['POST'])
 def admin_delete_internship(internship_id):

@@ -14,12 +14,14 @@
         </div>
     </div>
 
-    <div class="card p-4 bg-white border-0 shadow-sm">
+    <!-- PENDING INTERNSHIPS -->
+    <div class="card p-4 bg-white border-0 shadow-sm mb-4">
+        <h5 class="fw-bold text-dark mb-3">Pending Internships</h5>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Internship ID</th>
+                        <th>ID</th>
                         <th>Student Name</th>
                         <th>Company Name</th>
                         <th>Required Hours</th>
@@ -28,26 +30,75 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for internship, student in internships %}
+                    {% for internship, student in pending_internships %}
                     <tr>
                         <td>{{ internship.id }}</td>
                         <td class="fw-medium">{{ student.name }}</td>
                         <td>{{ internship.company_name }}</td>
                         <td>{{ internship.required_hours }} hrs</td>
                         <td>
-                            {% if internship.status == 'Approved' %}
-                                <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 fw-medium rounded-pill">Approved</span>
-                            {% elif internship.status == 'Rejected' %}
-                                <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-1 fw-medium rounded-pill">Rejected</span>
-                            {% else %}
-                                <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-1 fw-medium rounded-pill">Pending</span>
-                            {% endif %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-1 fw-medium rounded-pill">Pending</span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <form method="POST" action="{{ url_for('admin_update_internship_status', internship_id=internship.id) }}" class="d-inline">
+                                    <input type="hidden" name="status" value="Approved">
+                                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin_update_internship_status', internship_id=internship.id) }}" class="d-inline">
+                                    <input type="hidden" name="status" value="Rejected">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin_delete_internship', internship_id=internship.id) }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang record na ito?');">
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-3">Walang pending na internship.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ACTIVE / APPROVED INTERNSHIPS -->
+    <div class="card p-4 bg-white border-0 shadow-sm">
+        <h5 class="fw-bold text-dark mb-3">Active (Approved) Internships</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Student Name</th>
+                        <th>Company Name</th>
+                        <th>Required Hours</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for internship, student in active_internships %}
+                    <tr>
+                        <td>{{ internship.id }}</td>
+                        <td class="fw-medium">{{ student.name }}</td>
+                        <td>{{ internship.company_name }}</td>
+                        <td>{{ internship.required_hours }} hrs</td>
+                        <td>
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 fw-medium rounded-pill">Approved</span>
                         </td>
                         <td>
                             <form method="POST" action="{{ url_for('admin_delete_internship', internship_id=internship.id) }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang record na ito?');">
                                 <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                             </form>
                         </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-3">Walang active o approved na internship.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
