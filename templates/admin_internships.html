@@ -90,12 +90,10 @@
                         <td>{{ u.course or 'N/A' }}</td>
                         <td>
                             <div class="d-flex gap-2">
-                                <a href="{{ url_for('admin_edit_user', user_id=u.id) }}" class="btn btn-sm btn-warning text-dark fw-medium">Edit</a>
-                                {% if u.id != session.get('user_id') %}
-                                <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang student na ito?');">
+                                <a href="{{ url_for('admin_edit_user', user_id=u.id, role='student') }}" class="btn btn-sm btn-warning text-dark fw-medium">Edit</a>
+                                <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id, role='student') }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang student na ito?');">
                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                 </form>
-                                {% endif %}
                             </div>
                         </td>
                     </tr>

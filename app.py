@@ -22,6 +22,9 @@ def allowed_file(filename):
 
 db = SQLAlchemy(app)
 
+with app.app_context():
+    db.create_all()
+
 COURSE_HOURS = {
     'BSIT': 480,
     'BSCS': 480,
@@ -29,27 +32,47 @@ COURSE_HOURS = {
     'BPA': 300
 }
 
-# ----------------- DATABASE MODELS -----------------
+# ----------------- SEPARATED DATABASE MODELS -----------------
 
-class User(db.Model):
-    __tablename__ = 'users'
+class Admin(db.Model):
+    __tablename__ = 'admins'
     id = db.Column(db.Integer, primary_key=True)
-    student_number = db.Column(db.String(50), nullable=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), nullable=False) # 'student', 'adviser', 'admin'
+    role = db.Column(db.String(20), default='admin')
+
+class Adviser(db.Model):
+    __tablename__ = 'advisers'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(20), default='adviser')
+    
+    internships = db.relationship('Internship', backref='adviser', lazy=True)
+
+class Student(db.Model):
+    __tablename__ = 'students'
+    id = db.Column(db.Integer, primary_key=True)
+    student_number = db.Column(db.String(50), unique=True, nullable=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
     course = db.Column(db.String(50), nullable=True)
+    role = db.Column(db.String(20), default='student')
+    
+    internship = db.relationship('Internship', backref='student', uselist=False, lazy=True)
 
 class Internship(db.Model):
     __tablename__ = 'internships'
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    adviser_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
+    adviser_id = db.Column(db.Integer, db.ForeignKey('advisers.id'), nullable=False)
     company_name = db.Column(db.String(150), nullable=False)
     required_hours = db.Column(db.Float, nullable=False)
-    moa_path = db.Column(db.String(255), nullable=True) # MOA / Company document file path
-    status = db.Column(db.String(20), default='Pending') # 'Pending', 'Approved', 'Rejected'
+    moa_path = db.Column(db.String(255), nullable=True)
+    status = db.Column(db.String(20), default='Pending')
 
 class WeeklyLog(db.Model):
     __tablename__ = 'weekly_logs'
@@ -84,28 +107,29 @@ def register():
     email = request.form.get('email', '').strip()
     password = request.form.get('password', '')
     course = request.form.get('course', '').strip()
-    role = 'student'
 
     if not re.match(r"^[A-Za-z\s]+$", name):
         flash('Full Name must contain letters only.', 'danger')
         return render_template('login.html', active_tab='register')
 
-    existing_user = User.query.filter_by(email=email).first()
-    if existing_user:
+    existing_student = Student.query.filter_by(email=email).first()
+    existing_adviser = Adviser.query.filter_by(email=email).first()
+    existing_admin = Admin.query.filter_by(email=email).first()
+
+    if existing_student or existing_adviser or existing_admin:
         flash('Email already registered.', 'danger')
         return render_template('login.html', active_tab='register')
 
     hashed_password = generate_password_hash(password)
-    new_user = User(
+    new_student = Student(
         name=name,
-        student_number=student_number,
+        student_number=student_number if student_number else None,
         email=email,
         password_hash=hashed_password,
-        role=role,
-        course=course
+        course=course if course else None
     )
     
-    db.session.add(new_user)
+    db.session.add(new_student)
     db.session.commit()
 
     flash('Successfully registered! Please log in.', 'success')
@@ -120,12 +144,30 @@ def login():
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
 
-        user = User.query.filter_by(email=email).first()
+        user = None
+        role = None
 
-        if user and check_password_hash(user.password_hash, password):
+        admin = Admin.query.filter_by(email=email).first()
+        if admin and check_password_hash(admin.password_hash, password):
+            user = admin
+            role = 'admin'
+
+        if not user:
+            adviser = Adviser.query.filter_by(email=email).first()
+            if adviser and check_password_hash(adviser.password_hash, password):
+                user = adviser
+                role = 'adviser'
+
+        if not user:
+            student = Student.query.filter_by(email=email).first()
+            if student and check_password_hash(student.password_hash, password):
+                user = student
+                role = 'student'
+
+        if user:
             session['user_id'] = user.id
             session['user_name'] = user.name
-            session['user_role'] = user.role
+            session['user_role'] = role
             flash('Successfully logged in!', 'success')
             return redirect(url_for('dashboard'))
         else:
@@ -140,12 +182,21 @@ def dashboard():
         flash('Please log in first.', 'danger')
         return redirect(url_for('login'))
 
-    user = User.query.get(session['user_id'])
+    user_role = session.get('user_role')
+    user_id = session.get('user_id')
+
+    if user_role == 'admin':
+        return redirect(url_for('admin_users'))
+    elif user_role == 'adviser':
+        user = Adviser.query.get(user_id)
+    else:
+        user = Student.query.get(user_id)
+
     if not user:
         session.clear()
         return redirect(url_for('login'))
     
-    if user.role == 'student':
+    if user_role == 'student':
         internship = Internship.query.filter_by(student_id=user.id).first()
 
         if request.method == 'POST':
@@ -204,7 +255,7 @@ def dashboard():
             eval_records=eval_records,
             next_week=next_week
         )
-    elif user.role == 'adviser':
+    elif user_role == 'adviser':
         search_query = request.args.get('search_query', '').strip()
         pending_requests_count = Internship.query.filter_by(adviser_id=user.id, status='Pending').count()
         
@@ -212,15 +263,15 @@ def dashboard():
             join(Internship, WeeklyLog.internship_id == Internship.id).\
             filter(Internship.adviser_id == user.id, WeeklyLog.status == 'Pending').count()
 
-        query = db.session.query(User, Internship).\
-            join(Internship, User.id == Internship.student_id).\
+        query = db.session.query(Student, Internship).\
+            join(Internship, Student.id == Internship.student_id).\
             filter(Internship.adviser_id == user.id, Internship.status == 'Approved')
         
         if search_query:
             query = query.filter(
                 db.or_(
-                    User.name.ilike(f"%{search_query}%"),
-                    User.student_number.ilike(f"%{search_query}%")
+                    Student.name.ilike(f"%{search_query}%"),
+                    Student.student_number.ilike(f"%{search_query}%")
                 )
             )
         raw_students = query.all()
@@ -236,8 +287,6 @@ def dashboard():
             })
 
         return render_template('dashboard.html', user=user, students=students, pending_requests_count=pending_requests_count, pending_logs_count=pending_logs_count)
-    else:
-        return redirect(url_for('admin_users'))
 
 @app.route('/requests', methods=['GET', 'POST'])
 def requests_page():
@@ -245,7 +294,7 @@ def requests_page():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
 
-    user = User.query.get(session['user_id'])
+    user = Adviser.query.get(session['user_id'])
 
     if request.method == 'POST':
         internship_id = request.form.get('internship_id')
@@ -262,8 +311,8 @@ def requests_page():
         join(Internship, WeeklyLog.internship_id == Internship.id).\
         filter(Internship.adviser_id == user.id, WeeklyLog.status == 'Pending').count()
         
-    pending_query = db.session.query(User, Internship).\
-        join(Internship, User.id == Internship.student_id).\
+    pending_query = db.session.query(Student, Internship).\
+        join(Internship, Student.id == Internship.student_id).\
         filter(Internship.adviser_id == user.id, Internship.status == 'Pending')
     pending_requests = pending_query.all()
 
@@ -286,7 +335,7 @@ def add_internship():
         flash('You already have registered practicum details.', 'warning')
         return redirect(url_for('dashboard'))
 
-    student = User.query.get(session['user_id'])
+    student = Student.query.get(session['user_id'])
 
     if request.method == 'POST':
         company_name = request.form.get('company_name')
@@ -315,7 +364,7 @@ def add_internship():
         flash('Practicum details submitted successfully! Waiting for adviser approval.', 'success')
         return redirect(url_for('dashboard'))
 
-    advisers = User.query.filter_by(role='adviser').all()
+    advisers = Adviser.query.all()
     return render_template('add_internship.html', advisers=advisers, student=student)
 
 @app.route('/review-logs', methods=['GET', 'POST'])
@@ -349,9 +398,9 @@ def review_logs():
     search_query = request.args.get('search', '')
     sort_order = request.args.get('sort', 'latest')
 
-    query = db.session.query(WeeklyLog, User, Internship).\
+    query = db.session.query(WeeklyLog, Student, Internship).\
         join(Internship, WeeklyLog.internship_id == Internship.id).\
-        join(User, Internship.student_id == User.id).\
+        join(Student, Internship.student_id == Student.id).\
         filter(Internship.adviser_id == session['user_id'])
 
     if company_filter:
@@ -361,7 +410,7 @@ def review_logs():
     if status_filter:
         query = query.filter(WeeklyLog.status == status_filter)
     if search_query:
-        query = query.filter(User.name.ilike(f"%{search_query}%"))
+        query = query.filter(Student.name.ilike(f"%{search_query}%"))
 
     if sort_order == 'oldest':
         query = query.order_by(WeeklyLog.id.asc())
@@ -387,7 +436,7 @@ def evaluations(internship_id):
     user_id = session.get('user_id')
 
     internship = Internship.query.get_or_404(internship_id)
-    student = User.query.get_or_404(internship.student_id)
+    student = Student.query.get_or_404(internship.student_id)
 
     if user_role == 'adviser' and internship.adviser_id != user_id:
         flash('Unauthorized access.', 'danger')
@@ -509,9 +558,8 @@ def admin_users():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
     
-    advisers = User.query.filter_by(role='adviser').all()
-    admins = User.query.filter_by(role='admin').all()
-    
+    advisers = Adviser.query.all()
+    admins = Admin.query.all()
     return render_template('admin_users.html', advisers=advisers, admins=admins)
 
 @app.route('/admin/users/add', methods=['GET', 'POST'])
@@ -523,69 +571,81 @@ def admin_add_user():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip()
-        student_number = request.form.get('student_number', '').strip()
-        course = request.form.get('course', '').strip()
         role = request.form.get('role', '').strip()
         password = request.form.get('password', '').strip()
+        student_number = request.form.get('student_number', '').strip()
+        course = request.form.get('course', '').strip()
         
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
+        if Admin.query.filter_by(email=email).first() or Adviser.query.filter_by(email=email).first() or Student.query.filter_by(email=email).first():
             flash('Email already registered.', 'danger')
             return redirect(url_for('admin_add_user'))
             
         hashed_password = generate_password_hash(password)
-        new_user = User(
-            name=name,
-            email=email,
-            student_number=student_number if student_number else None,
-            course=course if course else None,
-            role=role,
-            password_hash=hashed_password
-        )
         
-        db.session.add(new_user)
+        if role == 'admin':
+            new_user = Admin(name=name, email=email, password_hash=hashed_password)
+            db.session.add(new_user)
+        elif role == 'adviser':
+            new_user = Adviser(name=name, email=email, password_hash=hashed_password)
+            db.session.add(new_user)
+        else:
+            new_user = Student(
+                name=name, 
+                email=email, 
+                password_hash=hashed_password,
+                student_number=student_number if student_number else None,
+                course=course if course else None
+            )
+            db.session.add(new_user)
+            
         db.session.commit()
         flash('New user added successfully!', 'success')
         return redirect(url_for('admin_users'))
         
     return render_template('admin_add_user.html')
 
-@app.route('/admin/users/edit/<int:user_id>', methods=['GET', 'POST'])
-def admin_edit_user(user_id):
+@app.route('/admin/users/edit/<int:user_id>/<string:role>', methods=['GET', 'POST'])
+def admin_edit_user(user_id, role):
     if 'user_id' not in session or session.get('user_role') != 'admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
     
-    target_user = User.query.get_or_404(user_id)
+    if role == 'admin':
+        target_user = Admin.query.get_or_404(user_id)
+    elif role == 'adviser':
+        target_user = Adviser.query.get_or_404(user_id)
+    else:
+        target_user = Student.query.get_or_404(user_id)
     
     if request.method == 'POST':
         target_user.name = request.form.get('name', '').strip()
         target_user.email = request.form.get('email', '').strip()
-        target_user.student_number = request.form.get('student_number', '').strip() or None
-        target_user.course = request.form.get('course', '').strip() or None
-        target_user.role = request.form.get('role', '').strip()
         
+        if role == 'student':
+            target_user.student_number = request.form.get('student_number', '').strip() or None
+            target_user.course = request.form.get('course', '').strip() or None
+            
         password = request.form.get('password', '').strip()
         if password:
             target_user.password_hash = generate_password_hash(password)
             
         db.session.commit()
         flash('User account updated successfully!', 'success')
-        return redirect(url_for('admin_edit_user', user_id=user_id))
+        return redirect(url_for('admin_edit_user', user_id=user_id, role=role))
         
     internship = None
     logs = []
     advisers = []
     assigned_students = []
 
-    if target_user.role == 'student':
+    if role == 'student':
         internship = Internship.query.filter_by(student_id=target_user.id).first()
         if internship:
             logs = WeeklyLog.query.filter_by(internship_id=internship.id).order_by(WeeklyLog.week_number.asc()).all()
-        advisers = User.query.filter_by(role='adviser').all()
-    elif target_user.role == 'adviser':
-        raw_students = db.session.query(User, Internship).\
-            join(Internship, User.id == Internship.student_id).\
+        advisers = Adviser.query.all()
+    elif role == 'adviser':
+        raw_students = db.session.query(Student, Internship).\
+            join(Internship, Student.id == Internship.student_id).\
             filter(Internship.adviser_id == target_user.id).all()
         for student, intern in raw_students:
             assigned_students.append({'student': student, 'internship': intern})
@@ -593,24 +653,32 @@ def admin_edit_user(user_id):
     return render_template(
         'admin_edit_user.html',
         target_user=target_user,
+        role=role,
         internship=internship,
         logs=logs,
         advisers=advisers,
         assigned_students=assigned_students
     )
 
-@app.route('/admin/users/delete/<int:user_id>', methods=['POST'])
-def admin_delete_user(user_id):
+@app.route('/admin/users/delete/<int:user_id>/<string:role>', methods=['POST'])
+def admin_delete_user(user_id, role):
     if 'user_id' not in session or session.get('user_role') != 'admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
         
-    target_user = User.query.get_or_404(user_id)
-    if target_user.id == session['user_id']:
-        flash('You cannot delete your own admin account.', 'danger')
-        return redirect(url_for('admin_users'))
+    if role == 'admin':
+        target_user = Admin.query.get_or_404(user_id)
+        if target_user.id == session['user_id']:
+            flash('You cannot delete your own admin account.', 'danger')
+            return redirect(url_for('admin_users'))
+        db.session.delete(target_user)
+    elif role == 'adviser':
+        target_user = Adviser.query.get_or_404(user_id)
+        db.session.delete(target_user)
+    else:
+        target_user = Student.query.get_or_404(user_id)
+        db.session.delete(target_user)
         
-    db.session.delete(target_user)
     db.session.commit()
     flash('User deleted successfully!', 'success')
     return redirect(url_for('admin_users'))
@@ -629,7 +697,7 @@ def admin_update_internship(internship_id):
     
     db.session.commit()
     flash('Internship data updated successfully!', 'success')
-    return redirect(url_for('admin_edit_user', user_id=internship.student_id))
+    return redirect(url_for('admin_edit_user', user_id=internship.student_id, role='student'))
 
 @app.route('/admin/log/update/<int:log_id>', methods=['POST'])
 def admin_update_log(log_id):
@@ -644,7 +712,7 @@ def admin_update_log(log_id):
     db.session.commit()
     internship = Internship.query.get(log.internship_id)
     flash('Weekly log updated successfully!', 'success')
-    return redirect(url_for('admin_edit_user', user_id=internship.student_id))
+    return redirect(url_for('admin_edit_user', user_id=internship.student_id, role='student'))
 
 @app.route('/admin/log/delete/<int:log_id>', methods=['POST'])
 def admin_delete_log(log_id):
@@ -657,7 +725,7 @@ def admin_delete_log(log_id):
     db.session.delete(log)
     db.session.commit()
     flash('Weekly log deleted successfully!', 'success')
-    return redirect(url_for('admin_edit_user', user_id=internship.student_id))
+    return redirect(url_for('admin_edit_user', user_id=internship.student_id, role='student'))
 
 @app.route('/admin/internships')
 def admin_internships():
@@ -665,8 +733,8 @@ def admin_internships():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
         
-    pending_internships = db.session.query(Internship, User).join(User, Internship.student_id == User.id).filter(Internship.status == 'Pending').all()
-    students = User.query.filter_by(role='student').all()
+    pending_internships = db.session.query(Internship, Student).join(Student, Internship.student_id == Student.id).filter(Internship.status == 'Pending').all()
+    students = Student.query.all()
     
     return render_template('admin_internships.html', pending_internships=pending_internships, students=students)
 

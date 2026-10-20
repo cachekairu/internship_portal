@@ -40,9 +40,9 @@
                         </td>
                         <td>
                             <div class="d-flex gap-2">
-                                <a href="{{ url_for('admin_edit_user', user_id=u.id) }}" class="btn btn-sm btn-warning text-dark fw-medium">Edit</a>
-                                {% if u.id != session.get('user_id') %}
-                                <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang adviser na ito?');">
+                                <a href="{{ url_for('admin_edit_user', user_id=u.id, role='adviser') }}" class="btn btn-sm btn-warning text-dark fw-medium">Edit</a>
+                                {% if u.id != session.get('user_id') or session.get('user_role') != 'admin' %}
+                                <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id, role='adviser') }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang adviser na ito?');">
                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                 </form>
                                 {% endif %}
@@ -84,9 +84,9 @@
                         </td>
                         <td>
                             <div class="d-flex gap-2">
-                                <a href="{{ url_for('admin_edit_user', user_id=u.id) }}" class="btn btn-sm btn-warning text-dark fw-medium">Edit</a>
+                                <a href="{{ url_for('admin_edit_user', user_id=u.id, role='admin') }}" class="btn btn-sm btn-warning text-dark fw-medium">Edit</a>
                                 {% if u.id != session.get('user_id') %}
-                                <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang admin na ito?');">
+                                <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id, role='admin') }}" class="d-inline" onsubmit="return confirm('Sigurado ka bang gusto mong burahin ang admin na ito?');">
                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                 </form>
                                 {% endif %}
