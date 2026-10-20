@@ -24,6 +24,21 @@ db = SQLAlchemy(app)
 
 with app.app_context():
     db.create_all()
+    # Auto-fix or create admin and adviser accounts with correct hash on startup
+    admin = Admin.query.filter_by(email='admin@admin.com').first()
+    correct_hash = generate_password_hash('admin123')
+    if admin:
+        admin.password_hash = correct_hash
+    else:
+        db.session.add(Admin(name='Administrator', email='admin@admin.com', password_hash=correct_hash, role='admin'))
+    
+    adviser = Adviser.query.filter_by(email='adviser@icct.edu.ph').first()
+    if adviser:
+        adviser.password_hash = correct_hash
+    else:
+        db.session.add(Adviser(name='Prof. Maria Santos', email='adviser@icct.edu.ph', password_hash=correct_hash, role='adviser'))
+    
+    db.session.commit()
 
 COURSE_HOURS = {
     'BSIT': 480,
