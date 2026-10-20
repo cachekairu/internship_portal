@@ -511,8 +511,10 @@ def admin_users():
         return redirect(url_for('login'))
     
     students = User.query.filter_by(role='student').all()
-    staff = User.query.filter(User.role.in_(['adviser', 'admin'])).all()
-    return render_template('admin_users.html', students=students, staff=staff)
+    advisers = User.query.filter_by(role='adviser').all()
+    admins = User.query.filter_by(role='admin').all()
+    
+    return render_template('admin_users.html', students=students, advisers=advisers, admins=admins)
 
 @app.route('/admin/users/add', methods=['GET', 'POST'])
 def admin_add_user():
